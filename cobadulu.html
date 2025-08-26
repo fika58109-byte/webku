@@ -1,0 +1,995 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>l
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Management System - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+    
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {font-family: 'Inter', sans-serif; }
+        .event-card {
+            
+            transition: all 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .event-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .event-card.selected {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+        }
+        
+        .event-card.expired {
+            border-color: #ef4444;
+            background: linear-gradient(135deg, #fef2f2 0%, #fef2f2 100%);
+            opacity: 0.8;
+        }
+        
+        .status-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .processing-animation {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .login-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .login-form {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen">
+    
+        <!-- Login Page -->
+            <div id="loginPage" class="login-container flex items-center justify-center p-4">
+                <div class="login-form w-full max-w-md rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-8">
+          <!-- Logo -->
+                 <div class="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg mx-auto mb-4 overflow-hidden">
+                     <img src="images/RPM.jpeg" alt="Logo RPM" class="w-full h-full object-cover">
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">RPM Management</h1>
+                <p class="text-gray-600">Masuk ke sistem </p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                    <input type="text" id="loginUsername" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                           placeholder="Masukkan username">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                    <div class="relative">
+                        <input type="password" id="loginPassword" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-12"
+                               placeholder="Masukkan password">
+                        <button type="button" onclick="togglePasswordVisibility('loginPassword')" 
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="loginBtn"
+                        class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105">
+                    <span id="loginBtnText">🔐 Masuk</span>
+                    <span id="loginBtnLoading" class="hidden">⚙️ Memproses...</span>
+                </button>
+            </form>
+
+            <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="flex items-center mb-2">
+                    <span class="text-amber-600 mr-2">🔐</span>
+                    <p class="text-sm text-amber-800 font-semibold">Sistem Keamanan</p>
+                </div>
+                <p class="text-xs text-amber-700">
+                    Gunakan kredensial yang telah diberikan admin untuk mengakses sistem.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden">
+        <div class="container mx-auto px-4 py-8 max-w-6xl">
+            <!-- Header with Logout -->
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center space-x-3">
+                     <!-- Logo -->
+                     <div class="w-12 h-12 rounded-lg flex items-center justify-center shadow-lg overflow-hidden">
+                    <img src="images/RPM.jpeg" alt="Event Logo" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">RPM Management</h2>
+                        <p class="text-sm text-gray-600">Event Organizer</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm text-gray-600"> <span id="currentUser" class="font-semibold"></span></span>
+                    <button onclick="showAdminSettings()" 
+                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors font-medium">
+                        ⚙️ Pengaturan Admin
+                    </button>
+                    <button onclick="logout()" 
+                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors font-medium">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">EVENT ORGANIZER (EO)</h1>
+                <p class="text-lg text-gray-600">Selamat Datang di Website RPM Management</p>
+            </div>
+
+            <!-- Current Date Display -->
+            <div class="bg-white rounded-lg shadow-md p-4 mb-8 text-center">
+                <p class="text-gray-600">Tanggal Hari Ini:</p>
+                <p class="text-xl font-semibold text-blue-600" id="currentDate"></p>
+            </div>
+
+            <!-- Add New Event Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">➕ Tambah Event Baru</h2>
+                    <button onclick="toggleAddEventForm()" id="toggleFormBtn" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        Buka Form
+                    </button>
+                </div>
+                
+                <div id="addEventForm" class="hidden">
+                    <form onsubmit="addNewEvent(event)" class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Event</label>
+                            <input type="text" id="eventName" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Masukkan nama event">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Emoji Icon</label>
+                            <input type="text" id="eventIcon" required maxlength="2"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="🎉">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Client</label>
+                            <input type="text" id="eventClient" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Masukkan nama client">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Mulai</label>
+                            <input type="date" id="eventStartDate" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Selesai</label>
+                            <input type="date" id="eventEndDate" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Waktu</label>
+                            <input type="text" id="eventTime" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="09:00 - 17:00 WIB">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Lokasi</label>
+                            <input type="text" id="eventLocation" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Masukkan lokasi event">
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Deskripsi Event</label>
+                            <textarea id="eventDescription" required rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Masukkan deskripsi event"></textarea>
+                        </div>
+                        
+                        <div class="md:col-span-2 flex space-x-3">
+                            <button type="submit" 
+                                    class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors">
+                                ✅ Tambah Event
+                            </button>
+                            <button type="button" onclick="clearForm()" 
+                                    class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors">
+                                🗑️ Clear Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Events Grid -->
+            <div class="grid lg:grid-cols-3 md:grid-cols-2 gap-6 mb-8">
+                <!-- Event 1 -->
+                <div class="event-card bg-white rounded-xl shadow-lg p-6 relative" data-event-id="1" data-start-date="2024-12-10" data-end-date="2024-12-12">
+                    <div class="absolute top-4 right-4">
+                        <span class="status-badge px-3 py-1 rounded-full text-xs font-semibold" id="status-1"></span>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">🎄 Christmas Workshop</h3>
+                        <p class="text-sm text-blue-600 font-semibold mb-2">Client: Spray</p>
+                        <p class="text-gray-600 mb-4">Workshop membuat dekorasi Natal dan kue kering tradisional</p>
+                        
+                        <div class="space-y-2 text-sm text-gray-500 mb-4">
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 mr-2">📅</span>
+                                <span>10 - 12 Desember 2024</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 mr-2">⏰</span>
+                                <span>09:00 - 15:00 WIB</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 mr-2">📍</span>
+                                <span>Community Center Jakarta</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="select-btn w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200" 
+                            onclick="selectEvent(1)">
+                        <span class="btn-text">Pilih Event</span>
+                        <span class="processing-icon hidden">⚙️</span>
+                    </button>
+                </div>
+
+                <!-- Event 2 -->
+                <div class="event-card bg-white rounded-xl shadow-lg p-6 relative" data-event-id="2" data-start-date="2025-01-20" data-end-date="2025-01-25">
+                    <div class="absolute top-4 right-4">
+                        <span class="status-badge px-3 py-1 rounded-full text-xs font-semibold" id="status-2"></span>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">💻 Tech Conference 2025</h3>
+                        <p class="text-sm text-blue-600 font-semibold mb-2">Client: RedPod</p>
+                        <p class="text-gray-600 mb-4">Konferensi teknologi terbaru dengan pembicara internasional</p>
+                        
+                        <div class="space-y-2 text-sm text-gray-500 mb-4">
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 mr-2">📅</span>
+                                <span>20 - 25 Januari 2025</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 mr-2">⏰</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 mr-2">📍</span>
+                                <span>Jakarta Convention Center</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="select-btn w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200" 
+                            onclick="selectEvent(2)">
+                        <span class="btn-text">Pilih Event</span>
+                        <span class="processing-icon hidden">⚙️</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selection Summary -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">📋 Ringkasan Pendaftaran</h3>
+                <div id="selectionSummary" class="text-gray-600">
+                    Belum ada event yang dipilih
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Settings Modal -->
+    <div id="adminModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4 w-full">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-800">⚙️ Pengaturan Admin</h3>
+                <button onclick="closeAdminSettings()" class="text-gray-500 hover:text-gray-700 text-xl">✕</button>
+            </div>
+            
+            <form onsubmit="updateCredentials(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Username Baru</label>
+                    <input type="text" id="newUsername" required minlength="3"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Minimal 3 karakter">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Password Baru</label>
+                    <div class="relative">
+                        <input type="password" id="newPassword" required minlength="6"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12"
+                               placeholder="Minimal 6 karakter">
+                        <button type="button" onclick="togglePasswordVisibility('newPassword')" 
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Konfirmasi Password</label>
+                    <div class="relative">
+                        <input type="password" id="confirmPassword" required minlength="6"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12"
+                               placeholder="Ulangi password baru">
+                        <button type="button" onclick="togglePasswordVisibility('confirmPassword')" 
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" onclick="closeAdminSettings()" 
+                            class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        💾 Simpan
+                    </button>
+                </div>
+            </form>
+            
+            <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-xs text-yellow-800">
+                    ⚠️ Setelah mengganti password, Anda akan otomatis logout untuk keamanan.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication and user management
+        let currentUsername = '';
+        let selectedEvents = new Set();
+        let eventCounter = 2;
+        let customEvents = [];
+
+        // Initialize default credentials if not exists
+        function initializeCredentials() {
+            if (!localStorage.getItem('adminUsername')) {
+                localStorage.setItem('adminUsername', 'admin');
+                localStorage.setItem('adminPassword', 'admin123');
+            }
+        }
+
+        // Handle login
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            const loginBtnLoading = document.getElementById('loginBtnLoading');
+            
+            // Show loading
+            loginBtnText.classList.add('hidden');
+            loginBtnLoading.classList.remove('hidden');
+            loginBtn.disabled = true;
+            
+            // Simulate authentication delay
+            setTimeout(() => {
+                const storedUsername = localStorage.getItem('adminUsername');
+                const storedPassword = localStorage.getItem('adminPassword');
+                
+                if (username === storedUsername && password === storedPassword) {
+                    // Login successful
+                    currentUsername = username;
+                    document.getElementById('currentUser').textContent = username;
+                    document.getElementById('loginPage').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    
+                    // Initialize main app
+                    initMainApp();
+                    showNotification('Login berhasil! Selamat datang.', 'success');
+                } else {
+                    // Login failed
+                    showNotification('Username atau password salah!', 'error');
+                }
+                
+                // Hide loading
+                loginBtnText.classList.remove('hidden');
+                loginBtnLoading.classList.add('hidden');
+                loginBtn.disabled = false;
+                
+                // Clear password field
+                document.getElementById('loginPassword').value = '';
+            }, 1500);
+        }
+
+        // Logout function
+        function logout() {
+            showCustomConfirm(
+                'Apakah Anda yakin ingin logout?',
+                () => {
+                    currentUsername = '';
+                    selectedEvents.clear();
+                    document.getElementById('mainApp').classList.add('hidden');
+                    document.getElementById('loginPage').classList.remove('hidden');
+                    
+                    // Clear login form
+                    document.getElementById('loginUsername').value = '';
+                    document.getElementById('loginPassword').value = '';
+                    
+                    showNotification('Logout berhasil!', 'info');
+                }
+            );
+        }
+
+        // Show admin settings modal
+        function showAdminSettings() {
+            const currentStoredUsername = localStorage.getItem('adminUsername');
+            document.getElementById('newUsername').value = currentStoredUsername;
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('adminModal').classList.remove('hidden');
+        }
+
+        // Close admin settings modal
+        function closeAdminSettings() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        // Update credentials
+        function updateCredentials(event) {
+            event.preventDefault();
+            
+            const newUsername = document.getElementById('newUsername').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate passwords match
+            if (newPassword !== confirmPassword) {
+                showNotification('Password dan konfirmasi password tidak sama!', 'error');
+                return;
+            }
+            
+            // Validate username length
+            if (newUsername.length < 3) {
+                showNotification('Username minimal 3 karakter!', 'error');
+                return;
+            }
+            
+            // Validate password length
+            if (newPassword.length < 6) {
+                showNotification('Password minimal 6 karakter!', 'error');
+                return;
+            }
+            
+            // Update credentials
+            localStorage.setItem('adminUsername', newUsername);
+            localStorage.setItem('adminPassword', newPassword);
+            
+            closeAdminSettings();
+            showNotification('Kredensial berhasil diperbarui! Anda akan logout untuk keamanan.', 'success');
+            
+            // Auto logout after 2 seconds for security
+            setTimeout(() => {
+                logout();
+            }, 2000);
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const button = input.nextElementSibling;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
+
+        // Initialize main application
+        function initMainApp() {
+            updateCurrentDate();
+            checkEventStatus();
+            updateUI();
+            
+            // Update every minute
+            setInterval(() => {
+                updateCurrentDate();
+                checkEventStatus();
+                updateUI();
+            }, 60000);
+            
+            // Update current date every second
+            setInterval(() => {
+                updateCurrentDate();
+            }, 1000);
+        }
+
+        // Update current date display
+        function updateCurrentDate() {
+            const now = new Date();
+            const dateOptions = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                timeZone: 'Asia/Jakarta'
+            };
+            const timeOptions = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: 'Asia/Jakarta'
+            };
+            
+            const dateString = now.toLocaleDateString('id-ID', dateOptions);
+            const timeString = now.toLocaleTimeString('id-ID', timeOptions);
+            
+            const currentDateElement = document.getElementById('currentDate');
+            if (currentDateElement) {
+                currentDateElement.innerHTML = `${dateString}<br><span class="text-lg font-normal text-blue-500">${timeString} WIB</span>`;
+            }
+        }
+
+        // Check status of all events
+        function checkEventStatus() {
+            const events = document.querySelectorAll('.event-card');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            events.forEach(eventCard => {
+                const eventId = eventCard.dataset.eventId;
+                const startDate = new Date(eventCard.dataset.startDate || eventCard.dataset.date);
+                const endDate = new Date(eventCard.dataset.endDate || eventCard.dataset.date);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(0, 0, 0, 0);
+
+                const statusElement = document.getElementById(`status-${eventId}`);
+                const button = eventCard.querySelector('.select-btn');
+                const btnText = button.querySelector('.btn-text');
+
+                if (endDate < today) {
+                    statusElement.textContent = 'INVALID';
+                    statusElement.className = 'status-badge px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800';
+                    
+                    eventCard.classList.add('expired');
+                    eventCard.classList.remove('selected');
+                    
+                    button.disabled = true;
+                    btnText.textContent = 'Event Berakhir';
+                    button.className = 'select-btn w-full py-3 px-4 rounded-lg font-semibold bg-red-500 text-white cursor-not-allowed';
+                    
+                    selectedEvents.delete(eventId);
+                } else if (selectedEvents.has(eventId)) {
+                    statusElement.textContent = 'TERPILIH';
+                    statusElement.className = 'status-badge px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800';
+                    
+                    eventCard.classList.add('selected');
+                    eventCard.classList.remove('expired');
+                    
+                    btnText.textContent = 'Terpilih ✓';
+                    button.className = 'select-btn w-full py-3 px-4 rounded-lg font-semibold bg-green-600 text-white';
+                    button.disabled = false;
+                } else {
+                    statusElement.textContent = 'DIPROSES';
+                    statusElement.className = 'status-badge px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800';
+                    
+                    eventCard.classList.remove('selected', 'expired');
+                    
+                    button.disabled = false;
+                    btnText.textContent = 'Pilih Event';
+                    button.className = 'select-btn w-full py-3 px-4 rounded-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white';
+                }
+            });
+        }
+
+        // Select/deselect an event
+        function selectEvent(eventId) {
+            const eventCard = document.querySelector(`[data-event-id="${eventId}"]`);
+            const endDate = new Date(eventCard.dataset.endDate || eventCard.dataset.date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            endDate.setHours(0, 0, 0, 0);
+
+            if (endDate < today) {
+                showNotification('Event ini sudah berakhir dan tidak dapat dipilih!', 'error');
+                return;
+            }
+
+            const button = eventCard.querySelector('.select-btn');
+            const btnText = button.querySelector('.btn-text');
+            const processingIcon = button.querySelector('.processing-icon');
+
+            btnText.classList.add('hidden');
+            processingIcon.classList.remove('hidden');
+            processingIcon.classList.add('processing-animation');
+            button.disabled = true;
+
+            setTimeout(() => {
+                if (selectedEvents.has(eventId)) {
+                    selectedEvents.delete(eventId);
+                    showNotification('Event berhasil dibatalkan!', 'info');
+                } else {
+                    selectedEvents.add(eventId);
+                    showNotification('Event berhasil dipilih!', 'success');
+                }
+
+                btnText.classList.remove('hidden');
+                processingIcon.classList.add('hidden');
+                processingIcon.classList.remove('processing-animation');
+                button.disabled = false;
+
+                updateUI();
+            }, 1500);
+        }
+
+        // Update UI based on current state
+        function updateUI() {
+            checkEventStatus();
+            updateSelectionSummary();
+        }
+
+        // Update selection summary
+        function updateSelectionSummary() {
+            const summaryElement = document.getElementById('selectionSummary');
+            
+            if (selectedEvents.size === 0) {
+                summaryElement.innerHTML = '<p class="text-gray-600">Belum ada event yang dipilih</p>';
+                return;
+            }
+
+            let summaryHTML = '<div class="space-y-3">';
+            
+            selectedEvents.forEach(eventId => {
+                const eventCard = document.querySelector(`[data-event-id="${eventId}"]`);
+                const eventTitle = eventCard.querySelector('h3').textContent;
+                const startDate = eventCard.dataset.startDate || eventCard.dataset.date;
+                const endDate = eventCard.dataset.endDate || eventCard.dataset.date;
+                const eventLocation = eventCard.querySelector('.space-y-2 .flex:nth-child(3) span:last-child').textContent;
+                
+                let dateText;
+                if (startDate === endDate) {
+                    dateText = new Date(startDate).toLocaleDateString('id-ID', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                } else {
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    const startDay = start.getDate();
+                    const endDay = end.getDate();
+                    const startMonth = start.toLocaleDateString('id-ID', { month: 'long' });
+                    const endMonth = end.toLocaleDateString('id-ID', { month: 'long' });
+                    const startYear = start.getFullYear();
+                    const endYear = end.getFullYear();
+                    
+                    if (startMonth === endMonth && startYear === endYear) {
+                        dateText = `${startDay} - ${endDay} ${startMonth} ${startYear}`;
+                    } else if (startYear === endYear) {
+                        dateText = `${startDay} ${startMonth} - ${endDay} ${endMonth} ${startYear}`;
+                    } else {
+                        dateText = `${startDay} ${startMonth} ${startYear} - ${endDay} ${endMonth} ${endYear}`;
+                    }
+                }
+                
+                summaryHTML += `
+                    <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div>
+                            <div class="font-semibold text-green-800">${eventTitle}</div>
+                            <div class="text-sm text-green-600">
+                                📅 ${dateText} | 📍 ${eventLocation}
+                            </div>
+                        </div>
+                        <button onclick="selectEvent('${eventId}')" 
+                                class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-colors">
+                            Batal
+                        </button>
+                    </div>
+                `;
+            });
+            
+            summaryHTML += '</div>';
+            summaryElement.innerHTML = summaryHTML;
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
+            
+            const bgColor = type === 'success' ? 'bg-green-100 border-green-500 text-green-800' : 
+                           type === 'error' ? 'bg-red-100 border-red-500 text-red-800' : 
+                           'bg-blue-100 border-blue-500 text-blue-800';
+            
+            notificationDiv.className += ` ${bgColor} border-l-4`;
+            notificationDiv.innerHTML = `
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <p class="font-semibold">${message}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-gray-500 hover:text-gray-700">
+                        ✕
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notificationDiv);
+            
+            setTimeout(() => {
+                notificationDiv.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notificationDiv.classList.add('translate-x-full');
+                setTimeout(() => notificationDiv.remove(), 300);
+            }, 4000);
+        }
+
+        // Toggle add event form
+        function toggleAddEventForm() {
+            const form = document.getElementById('addEventForm');
+            const btn = document.getElementById('toggleFormBtn');
+            
+            if (form.classList.contains('hidden')) {
+                form.classList.remove('hidden');
+                btn.textContent = 'Tutup Form';
+                btn.className = 'px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors';
+            } else {
+                form.classList.add('hidden');
+                btn.textContent = 'Buka Form';
+                btn.className = 'px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors';
+            }
+        }
+
+        // Clear form
+        function clearForm() {
+            document.getElementById('eventName').value = '';
+            document.getElementById('eventIcon').value = '';
+            document.getElementById('eventClient').value = '';
+            document.getElementById('eventStartDate').value = '';
+            document.getElementById('eventEndDate').value = '';
+            document.getElementById('eventTime').value = '';
+            document.getElementById('eventLocation').value = '';
+            document.getElementById('eventDescription').value = '';
+        }
+
+        // Add new event
+        function addNewEvent(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('eventName').value;
+            const icon = document.getElementById('eventIcon').value;
+            const client = document.getElementById('eventClient').value;
+            const startDate = document.getElementById('eventStartDate').value;
+            const endDate = document.getElementById('eventEndDate').value;
+            const time = document.getElementById('eventTime').value;
+            const location = document.getElementById('eventLocation').value;
+            const description = document.getElementById('eventDescription').value;
+            
+            const eventStartDate = new Date(startDate);
+            const eventEndDate = new Date(endDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            eventStartDate.setHours(0, 0, 0, 0);
+            eventEndDate.setHours(0, 0, 0, 0);
+            
+            if (eventStartDate < today) {
+                showNotification('Tanggal mulai event tidak boleh di masa lalu!', 'error');
+                return;
+            }
+            
+            if (eventEndDate < eventStartDate) {
+                showNotification('Tanggal selesai tidak boleh lebih awal dari tanggal mulai!', 'error');
+                return;
+            }
+            
+            eventCounter++;
+            const newEventId = eventCounter.toString();
+            
+            const newEvent = {
+                id: newEventId,
+                name: name,
+                icon: icon,
+                client: client,
+                startDate: startDate,
+                endDate: endDate,
+                time: time,
+                location: location,
+                description: description
+            };
+            
+            customEvents.push(newEvent);
+            
+            const eventCard = createEventCard(newEvent);
+            const eventsGrid = document.querySelector('.grid.lg\\:grid-cols-3');
+            eventsGrid.insertAdjacentHTML('beforeend', eventCard);
+            
+            clearForm();
+            toggleAddEventForm();
+            updateUI();
+            
+            showNotification('Event baru berhasil ditambahkan!', 'success');
+        }
+
+        // Create event card HTML
+        function createEventCard(event) {
+            const startDate = new Date(event.startDate);
+            const endDate = new Date(event.endDate);
+            
+            let dateRangeText;
+            if (event.startDate === event.endDate) {
+                dateRangeText = startDate.toLocaleDateString('id-ID', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            } else {
+                const startDay = startDate.getDate();
+                const endDay = endDate.getDate();
+                const startMonth = startDate.toLocaleDateString('id-ID', { month: 'long' });
+                const endMonth = endDate.toLocaleDateString('id-ID', { month: 'long' });
+                const startYear = startDate.getFullYear();
+                const endYear = endDate.getFullYear();
+                
+                if (startMonth === endMonth && startYear === endYear) {
+                    dateRangeText = `${startDay} - ${endDay} ${startMonth} ${startYear}`;
+                } else if (startYear === endYear) {
+                    dateRangeText = `${startDay} ${startMonth} - ${endDay} ${endMonth} ${startYear}`;
+                } else {
+                    dateRangeText = `${startDay} ${startMonth} ${startYear} - ${endDay} ${endMonth} ${endYear}`;
+                }
+            }
+            
+            return `
+                <div class="event-card bg-white rounded-xl shadow-lg p-6 relative" data-event-id="${event.id}" data-start-date="${event.startDate}" data-end-date="${event.endDate}">
+                    <div class="absolute top-4 right-4">
+                        <span class="status-badge px-3 py-1 rounded-full text-xs font-semibold" id="status-${event.id}"></span>
+                    </div>
+                    
+                    <div class="absolute top-4 left-4">
+                        <button onclick="deleteEvent('${event.id}')" 
+                                class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs flex items-center justify-center transition-colors"
+                                title="Hapus Event">
+                            ✕
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6 mt-4">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">${event.icon} ${event.name}</h3>
+                        <p class="text-sm text-blue-600 font-semibold mb-2">Client: ${event.client}</p>
+                        <p class="text-gray-600 mb-4">${event.description}</p>
+                        
+                        <div class="space-y-2 text-sm text-gray-500 mb-4">
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 mr-2">📅</span>
+                                <span>${dateRangeText}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 mr-2">⏰</span>
+                                <span>${event.time}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 mr-2">📍</span>
+                                <span>${event.location}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="select-btn w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200" 
+                            onclick="selectEvent('${event.id}')">
+                        <span class="btn-text">Pilih Event</span>
+                        <span class="processing-icon hidden">⚙️</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        // Delete event
+        function deleteEvent(eventId) {
+            showCustomConfirm(
+                'Apakah Anda yakin ingin menghapus event ini?',
+                () => {
+                    selectedEvents.delete(eventId);
+                    customEvents = customEvents.filter(event => event.id !== eventId);
+                    
+                    const eventCard = document.querySelector(`[data-event-id="${eventId}"]`);
+                    eventCard.remove();
+                    
+                    updateUI();
+                    showNotification('Event berhasil dihapus!', 'success');
+                }
+            );
+        }
+
+        // Custom confirm function
+        function showCustomConfirm(message, onConfirm) {
+            const confirmDiv = document.createElement('div');
+            confirmDiv.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
+            confirmDiv.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4 transform transition-all duration-200 scale-95">
+                    <div class="text-center">
+                        <div class="text-4xl mb-4">⚠️</div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Konfirmasi</h3>
+                        <p class="text-gray-600 mb-6">${message}</p>
+                        <div class="flex space-x-3">
+                            <button onclick="this.closest('.fixed').remove()" 
+                                    class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                                Batal
+                            </button>
+                            <button onclick="confirmAction()" 
+                                    class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                Ya, Lanjutkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(confirmDiv);
+            
+            setTimeout(() => {
+                confirmDiv.querySelector('.bg-white').classList.remove('scale-95');
+                confirmDiv.querySelector('.bg-white').classList.add('scale-100');
+            }, 100);
+            
+            window.currentConfirmCallback = onConfirm;
+        }
+
+        // Handle confirmation
+        function confirmAction() {
+            if (window.currentConfirmCallback) {
+                window.currentConfirmCallback();
+                window.currentConfirmCallback = null;
+            }
+            document.querySelector('.fixed.inset-0').remove();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeCredentials();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96bbed229349df8f',t:'MTc1NDYyMzczNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
